@@ -29,20 +29,20 @@ jobs:
             backend/package-lock.json
 
       - name: Install Frontend dependencies
-        run: npm ci
         working-directory: ./frontend
+        run: npm ci
 
       - name: Lint Frontend
-        run: npm run lint
         working-directory: ./frontend
+        run: npm run lint
 
       - name: Install Backend dependencies
-        run: npm ci
         working-directory: ./backend
+        run: npm ci
 
       - name: Lint Backend
-        run: npm run lint
         working-directory: ./backend
+        run: npm run lint
 
   build:
     name: Build Frontend & Backend
@@ -63,26 +63,25 @@ jobs:
             backend/package-lock.json
 
       - name: Install Frontend dependencies
-        run: npm ci
         working-directory: ./frontend
+        run: npm ci
 
       - name: Build Frontend
-        run: npm run build
         working-directory: ./frontend
+        run: npm run build
 
       - name: Install Backend dependencies
-        run: npm ci
         working-directory: ./backend
+        run: npm ci
 
       - name: Build Backend
-        run: npm run build
         working-directory: ./backend
-        continue-on-error: true
+        run: npm run build
 
   test:
     name: Run Backend Tests
     runs-on: self-hosted
-    needs: lint
+    needs: build   # <- important : on teste après le build
     
     steps:
       - name: Checkout code
@@ -96,12 +95,12 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install Backend dependencies
-        run: npm ci
         working-directory: ./backend
+        run: npm ci
 
       - name: Run Backend Tests
-        run: npm test
         working-directory: ./backend
+        run: npm test
 
   sonarcloud:
     name: SonarCloud Analysis
@@ -112,7 +111,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+          fetch-depth: 0  # important pour l'analyse
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -133,3 +132,4 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
