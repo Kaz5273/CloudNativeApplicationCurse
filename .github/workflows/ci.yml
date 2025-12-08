@@ -24,6 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
       - name: Install Frontend dependencies
         working-directory: ./frontend
         run: npm install
@@ -66,9 +67,9 @@ jobs:
         working-directory: ./backend
         run: npm install
 
-      - name: Build Backend
+      - name: Build Backend (if build script exists)
         working-directory: ./backend
-        run: npm run build
+        run: npm run build --if-present
 
   test:
     name: Run Backend Tests
