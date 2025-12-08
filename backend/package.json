@@ -12,7 +12,7 @@
     "prisma:push": "npx prisma db push",
     "db:setup": "npx prisma generate && npx prisma migrate deploy",
     "lint": "eslint .",
-    "build": "vite build"
+    "build": "nest build"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
