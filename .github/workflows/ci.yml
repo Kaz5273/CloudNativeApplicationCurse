@@ -5,7 +5,7 @@ on:
     branches:
       - develop
       - main
-      - features/**
+      - feature/**
   pull_request:
     branches:
       - develop
@@ -26,8 +26,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
+            **/package-lock.json
 
       - name: Install Frontend dependencies
         working-directory: ./frontend
@@ -50,87 +49,3 @@ jobs:
     runs-on: self-hosted
     needs: lint
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
-
-      - name: Install Frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Build Frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      - name: Install Backend dependencies
-        working-directory: ./backend
-        run: npm ci
-
-      - name: Build Backend
-        working-directory: ./backend
-        run: npm run build
-
-  test:
-    name: Run Backend Tests
-    runs-on: self-hosted
-    needs: build   # <- important : on teste après le build
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install Backend dependencies
-        working-directory: ./backend
-        run: npm ci
-
-      - name: Run Backend Tests
-        working-directory: ./backend
-        run: npm test
-
-  sonarcloud:
-    name: SonarCloud Analysis
-    runs-on: self-hosted
-    needs: [lint, test]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # important pour l'analyse
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: backend
-          args: >
-            -Dsonar.organization=kaz5273
-            -Dsonar.projectKey=Kaz5273_CloudNativeApplicationCurse
-            -Dsonar.sources=src
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-
-      - name: Check Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
