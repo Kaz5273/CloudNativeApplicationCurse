@@ -106,6 +106,7 @@ This project uses **Husky** for Git hooks automation:
 npm install  # Installs husky hooks automatically
 ```
 
+
 ## CI/CD Pipeline
 
 ### GitHub Actions Workflow
@@ -319,6 +320,7 @@ The deployment is designed to be **safe and idempotent**:
 - ❌ `--volumes` (would delete database data)
 - ❌ `--rmi` (would delete images)
 - ❌ `-v` (would delete volumes)
+
 
 ## Quick Start
 
