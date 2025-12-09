@@ -1,5 +1,8 @@
 # Gym Management System
 
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=Kaz5273_CloudNativeApplicationCurse)](https://sonarcloud.io/summary/new_code?id=Kaz5273_CloudNativeApplicationCurse)
+
+
 A complete fullstack gym management application built with modern web technologies.
 
 ## Features
