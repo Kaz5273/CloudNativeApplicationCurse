@@ -198,3 +198,29 @@ jobs:
           docker rmi ghcr.io/$owner/cloudnative-backend:${{ github.sha }} -f 2>$null
           docker rmi ghcr.io/$owner/cloudnative-frontend:${{ github.sha }} -f 2>$null
         continue-on-error: true
+
+  deploy:
+    name: Deploy to Production
+    runs-on: self-hosted
+    needs: docker
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run deployment script
+        run: |
+          $owner = "${{ github.repository_owner }}".ToLower()
+          ./scripts/deploy.ps1 -ImageTag "${{ github.sha }}" -Owner $owner
+
+      - name: Display running containers
+        if: always()
+        run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

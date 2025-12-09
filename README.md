@@ -246,6 +246,80 @@ docker pull ghcr.io/kaz5273/cloudnative-frontend:latest
 - Backend: [`ghcr.io/kaz5273/cloudnative-backend`](https://github.com/Kaz5273/cloudnative-backend/pkgs/container/cloudnative-backend)
 - Frontend: [`ghcr.io/kaz5273/cloudnative-frontend`](https://github.com/Kaz5273/cloudnative-frontend/pkgs/container/cloudnative-frontend)
 
+## 🔄 Automated Deployment
+
+### Deployment Workflow
+
+The project includes an **automated deployment pipeline** that deploys the application locally after successful builds:
+
+```
+Lint → Build → Test → SonarCloud → Docker Build & Push → Deploy
+```
+
+**Workflow Steps:**
+
+1. **Code Quality Checks** - Linting and testing
+2. **SonarCloud Analysis** - Quality gate validation
+3. **Docker Build** - Build backend and frontend images
+4. **Container Testing** - Verify images start correctly
+5. **Push to Registry** - Publish to GitHub Container Registry
+6. **Automated Deploy** - Pull images and deploy locally
+
+### Deployment Trigger
+
+The deployment stage is **automatically executed** after successful image publication on specific branches:
+
+- ✅ **`main` branch** - Production deployment
+- ✅ **`develop` branch** - Staging deployment
+- ❌ Feature branches - Build and test only (no deployment)
+
+### Deployment Script
+
+The deployment uses an **idempotent** PowerShell script (`scripts/deploy.ps1`) that:
+
+- Stops running containers (preserves PostgreSQL data)
+- Pulls latest images from GHCR
+- Tags images for docker-compose compatibility
+- Starts the application stack
+- Verifies all services are running
+
+**Manual deployment:**
+```powershell
+./scripts/deploy.ps1 -ImageTag "latest" -Owner "kaz5273"
+```
+
+### Deployment Requirements
+
+To enable automated deployment, you need:
+
+**1. Self-Hosted Runner**
+- Active GitHub Actions runner on your local machine
+- Docker installed and running
+- PowerShell 5.1+ (Windows) or PowerShell Core (Linux/Mac)
+
+**2. Required Secrets**
+- `GITHUB_TOKEN` - Automatically provided by GitHub Actions for GHCR
+- `SONAR_TOKEN` - SonarCloud authentication
+
+**3. Registry Access**
+- Runner must have access to pull from `ghcr.io`
+- Automatic login via GitHub token
+
+### Deployment Safety
+
+The deployment is designed to be **safe and idempotent**:
+
+- ✅ Can be run multiple times without issues
+- ✅ **Never deletes database volumes** (`docker compose down` without `--volumes`)
+- ✅ Preserves all PostgreSQL data between deployments
+- ✅ Graceful container shutdown and restart
+- ✅ Automatic health checks and verification
+
+**Important:** The deployment does NOT use destructive options like:
+- ❌ `--volumes` (would delete database data)
+- ❌ `--rmi` (would delete images)
+- ❌ `-v` (would delete volumes)
+
 ## Quick Start
 
 ### Prerequisites
