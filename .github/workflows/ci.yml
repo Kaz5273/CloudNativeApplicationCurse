@@ -190,6 +190,8 @@ jobs:
       - name: Clean up local images
         if: always()
         run: |
-          docker rmi backend-ci frontend-ci || true
-          docker rmi ghcr.io/${{ github.repository_owner }}/cloudnative-backend:${{ github.sha }} || true
-          docker rmi ghcr.io/${{ github.repository_owner }}/cloudnative-frontend:${{ github.sha }} || true
+          docker rmi backend-ci -f 2>$null
+          docker rmi frontend-ci -f 2>$null
+          docker rmi ghcr.io/${{ github.repository_owner }}/cloudnative-backend:${{ github.sha }} -f 2>$null
+          docker rmi ghcr.io/${{ github.repository_owner }}/cloudnative-frontend:${{ github.sha }} -f 2>$null
+        continue-on-error: true
