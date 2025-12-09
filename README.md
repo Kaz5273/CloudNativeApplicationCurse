@@ -106,6 +106,101 @@ This project uses **Husky** for Git hooks automation:
 npm install  # Installs husky hooks automatically
 ```
 
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The project uses a comprehensive CI pipeline that runs on every push and pull request to `main` and `develop` branches.
+
+**Pipeline Jobs:**
+
+1. **Lint** - Code quality checks
+   - Frontend linting with ESLint
+   - Backend linting with ESLint
+
+2. **Build** - Application build verification
+   - Frontend build with Vite
+   - Backend build (if applicable)
+
+3. **Test** - Automated testing
+   - Backend unit tests
+   - Test coverage reporting
+
+4. **SonarCloud** - Code quality analysis
+   - Static code analysis
+   - Security vulnerability scanning
+   - Code coverage analysis
+   - **Quality Gate enforcement** (blocks merge if failed)
+
+**Runner**: All jobs run on self-hosted runner
+
+**Required Secrets:**
+- `SONAR_TOKEN` - SonarCloud authentication token
+
+## Docker Architecture
+
+### Backend Dockerfile
+
+Multi-stage build with production optimization:
+
+- **Build Stage**: Dependencies installation and Prisma client generation
+- **Production Stage**: Minimal `node:18-alpine` image
+- Environment configuration via env variables
+- Exposes port `3000`
+- Health check endpoint
+- Non-root user for security
+
+**Build:**
+```bash
+cd backend
+docker build -t gym-backend .
+docker run -p 3000:3000 gym-backend
+```
+
+### Frontend Dockerfile
+
+Multi-stage build with Nginx serving:
+
+- **Build Stage**: Vue.js application build with Vite
+- **Production Stage**: Lightweight `nginx:alpine` image
+- Custom `nginx.conf` with:
+  - Client-side routing support (Vue Router)
+  - Static asset caching
+  - Gzip compression
+  - Security headers
+- Exposes port `80`
+
+**Build:**
+```bash
+cd frontend
+docker build -t gym-frontend .
+docker run -p 8080:80 gym-frontend
+```
+
+### Docker Compose
+
+Full stack orchestration with:
+- Frontend (Nginx)
+- Backend (Node.js)
+- PostgreSQL database
+- Network isolation
+- Volume persistence
+
+**Commands:**
+```bash
+# Start all services
+docker-compose up --build
+
+# Stop all services
+docker-compose down
+
+# View logs
+docker-compose logs -f [service-name]
+
+# Rebuild specific service
+docker-compose up --build [service-name]
+```
+
 ## Quick Start
 
 ### Prerequisites
