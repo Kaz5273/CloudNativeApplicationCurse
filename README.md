@@ -245,7 +245,7 @@ docker pull ghcr.io/kaz5273/cloudnative-frontend:latest
 **Image repositories:**
 - Backend: [`ghcr.io/kaz5273/cloudnative-backend`](https://github.com/Kaz5273/cloudnative-backend/pkgs/container/cloudnative-backend)
 - Frontend: [`ghcr.io/kaz5273/cloudnative-frontend`](https://github.com/Kaz5273/cloudnative-frontend/pkgs/container/cloudnative-frontend)
-
+- 
 ## Quick Start
 
 ### Prerequisites
