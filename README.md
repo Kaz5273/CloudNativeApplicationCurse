@@ -1,7 +1,7 @@
 # Gym Management System
 
+[![CI Pipeline](https://github.com/Kaz5273/CloudNativeApplicationCurse/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaz5273/CloudNativeApplicationCurse/actions/workflows/ci.yml)
 [![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=Kaz5273_CloudNativeApplicationCurse)](https://sonarcloud.io/summary/new_code?id=Kaz5273_CloudNativeApplicationCurse)
-
 
 A complete fullstack gym management application built with modern web technologies.
 
@@ -110,7 +110,7 @@ npm install  # Installs husky hooks automatically
 
 ### GitHub Actions Workflow
 
-The project uses a comprehensive CI pipeline that runs on every push and pull request to `main` and `develop` branches.
+The project uses a comprehensive CI/CD pipeline that runs on every push and pull request to `main`, `develop`, and `feature/*` branches.
 
 **Pipeline Jobs:**
 
@@ -132,10 +132,31 @@ The project uses a comprehensive CI pipeline that runs on every push and pull re
    - Code coverage analysis
    - **Quality Gate enforcement** (blocks merge if failed)
 
-**Runner**: All jobs run on self-hosted runner
+5. **Docker** - Container image build and deployment
+   - Build backend and frontend Docker images
+   - Run container health checks
+   - Tag images with commit SHA and `latest`
+   - Push to GitHub Container Registry (GHCR)
+
+### Pipeline Requirements
+
+**Self-Hosted Runner:**
+- All jobs run on a self-hosted runner
+- Requires Docker installed on the runner
+- Requires PowerShell 5.1+ (Windows)
 
 **Required Secrets:**
 - `SONAR_TOKEN` - SonarCloud authentication token
+- `GITHUB_TOKEN` - Automatically provided for GHCR authentication
+
+**Workflow Trigger:**
+```yaml
+on:
+  push:
+    branches: [develop, main, feature/**]
+  pull_request:
+    branches: [develop, main]
+```
 
 ## Docker Architecture
 
@@ -186,20 +207,44 @@ Full stack orchestration with:
 - Network isolation
 - Volume persistence
 
-**Commands:**
+**Start the entire application:**
 ```bash
-# Start all services
-docker-compose up --build
+docker compose up --build
+```
 
+**Access the application:**
+- **Frontend**: http://localhost:8080
+- **Backend API**: http://localhost:3000
+- **PostgreSQL**: localhost:5432 (internal only)
+
+**Other commands:**
+```bash
 # Stop all services
-docker-compose down
+docker compose down
 
 # View logs
-docker-compose logs -f [service-name]
+docker compose logs -f [service-name]
 
 # Rebuild specific service
-docker-compose up --build [service-name]
+docker compose up --build [service-name]
 ```
+
+### Docker Images
+
+Pre-built images are available on GitHub Container Registry:
+
+**Pull images:**
+```bash
+# Backend
+docker pull ghcr.io/kaz5273/cloudnative-backend:latest
+
+# Frontend
+docker pull ghcr.io/kaz5273/cloudnative-frontend:latest
+```
+
+**Image repositories:**
+- Backend: [`ghcr.io/kaz5273/cloudnative-backend`](https://github.com/Kaz5273/cloudnative-backend/pkgs/container/cloudnative-backend)
+- Frontend: [`ghcr.io/kaz5273/cloudnative-frontend`](https://github.com/Kaz5273/cloudnative-frontend/pkgs/container/cloudnative-frontend)
 
 ## Quick Start
 
@@ -212,8 +257,8 @@ docker-compose up --build [service-name]
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd gym-management-system
+   git clone https://github.com/Kaz5273/CloudNativeApplicationCurse.git
+   cd CloudNativeApplicationCurse
    ```
 
 2. **Set up environment variables**
