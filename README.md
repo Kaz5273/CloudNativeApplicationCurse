@@ -1,5 +1,8 @@
 # Gym Management System
 
+[![CI Pipeline](https://github.com/Kaz5273/CloudNativeApplicationCurse/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaz5273/CloudNativeApplicationCurse/actions/workflows/ci.yml)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=Kaz5273_CloudNativeApplicationCurse)](https://sonarcloud.io/summary/new_code?id=Kaz5273_CloudNativeApplicationCurse)
+
 A complete fullstack gym management application built with modern web technologies.
 
 ## Features
@@ -103,6 +106,222 @@ This project uses **Husky** for Git hooks automation:
 npm install  # Installs husky hooks automatically
 ```
 
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The project uses a comprehensive CI/CD pipeline that runs on every push and pull request to `main`, `develop`, and `feature/*` branches.
+
+**Pipeline Jobs:**
+
+1. **Lint** - Code quality checks
+   - Frontend linting with ESLint
+   - Backend linting with ESLint
+
+2. **Build** - Application build verification
+   - Frontend build with Vite
+   - Backend build (if applicable)
+
+3. **Test** - Automated testing
+   - Backend unit tests
+   - Test coverage reporting
+
+4. **SonarCloud** - Code quality analysis
+   - Static code analysis
+   - Security vulnerability scanning
+   - Code coverage analysis
+   - **Quality Gate enforcement** (blocks merge if failed)
+
+5. **Docker** - Container image build and deployment
+   - Build backend and frontend Docker images
+   - Run container health checks
+   - Tag images with commit SHA and `latest`
+   - Push to GitHub Container Registry (GHCR)
+
+### Pipeline Requirements
+
+**Self-Hosted Runner:**
+- All jobs run on a self-hosted runner
+- Requires Docker installed on the runner
+- Requires PowerShell 5.1+ (Windows)
+
+**Required Secrets:**
+- `SONAR_TOKEN` - SonarCloud authentication token
+- `GITHUB_TOKEN` - Automatically provided for GHCR authentication
+
+**Workflow Trigger:**
+```yaml
+on:
+  push:
+    branches: [develop, main, feature/**]
+  pull_request:
+    branches: [develop, main]
+```
+
+## Docker Architecture
+
+### Backend Dockerfile
+
+Multi-stage build with production optimization:
+
+- **Build Stage**: Dependencies installation and Prisma client generation
+- **Production Stage**: Minimal `node:18-alpine` image
+- Environment configuration via env variables
+- Exposes port `3000`
+- Health check endpoint
+- Non-root user for security
+
+**Build:**
+```bash
+cd backend
+docker build -t gym-backend .
+docker run -p 3000:3000 gym-backend
+```
+
+### Frontend Dockerfile
+
+Multi-stage build with Nginx serving:
+
+- **Build Stage**: Vue.js application build with Vite
+- **Production Stage**: Lightweight `nginx:alpine` image
+- Custom `nginx.conf` with:
+  - Client-side routing support (Vue Router)
+  - Static asset caching
+  - Gzip compression
+  - Security headers
+- Exposes port `80`
+
+**Build:**
+```bash
+cd frontend
+docker build -t gym-frontend .
+docker run -p 8080:80 gym-frontend
+```
+
+### Docker Compose
+
+Full stack orchestration with:
+- Frontend (Nginx)
+- Backend (Node.js)
+- PostgreSQL database
+- Network isolation
+- Volume persistence
+
+**Start the entire application:**
+```bash
+docker compose up --build
+```
+
+**Access the application:**
+- **Frontend**: http://localhost:8080
+- **Backend API**: http://localhost:3000
+- **PostgreSQL**: localhost:5432 (internal only)
+
+**Other commands:**
+```bash
+# Stop all services
+docker compose down
+
+# View logs
+docker compose logs -f [service-name]
+
+# Rebuild specific service
+docker compose up --build [service-name]
+```
+
+### Docker Images
+
+Pre-built images are available on GitHub Container Registry:
+
+**Pull images:**
+```bash
+# Backend
+docker pull ghcr.io/kaz5273/cloudnative-backend:latest
+
+# Frontend
+docker pull ghcr.io/kaz5273/cloudnative-frontend:latest
+```
+
+**Image repositories:**
+- Backend: [`ghcr.io/kaz5273/cloudnative-backend`](https://github.com/Kaz5273/cloudnative-backend/pkgs/container/cloudnative-backend)
+- Frontend: [`ghcr.io/kaz5273/cloudnative-frontend`](https://github.com/Kaz5273/cloudnative-frontend/pkgs/container/cloudnative-frontend)
+
+## 🔄 Automated Deployment
+
+### Deployment Workflow
+
+The project includes an **automated deployment pipeline** that deploys the application locally after successful builds:
+
+```
+Lint → Build → Test → SonarCloud → Docker Build & Push → Deploy
+```
+
+**Workflow Steps:**
+
+1. **Code Quality Checks** - Linting and testing
+2. **SonarCloud Analysis** - Quality gate validation
+3. **Docker Build** - Build backend and frontend images
+4. **Container Testing** - Verify images start correctly
+5. **Push to Registry** - Publish to GitHub Container Registry
+6. **Automated Deploy** - Pull images and deploy locally
+
+### Deployment Trigger
+
+The deployment stage is **automatically executed** after successful image publication on specific branches:
+
+- ✅ **`main` branch** - Production deployment
+- ✅ **`develop` branch** - Staging deployment
+- ❌ Feature branches - Build and test only (no deployment)
+
+### Deployment Script
+
+The deployment uses an **idempotent** PowerShell script (`scripts/deploy.ps1`) that:
+
+- Stops running containers (preserves PostgreSQL data)
+- Pulls latest images from GHCR
+- Tags images for docker-compose compatibility
+- Starts the application stack
+- Verifies all services are running
+
+**Manual deployment:**
+```powershell
+./scripts/deploy.ps1 -ImageTag "latest" -Owner "kaz5273"
+```
+
+### Deployment Requirements
+
+To enable automated deployment, you need:
+
+**1. Self-Hosted Runner**
+- Active GitHub Actions runner on your local machine
+- Docker installed and running
+- PowerShell 5.1+ (Windows) or PowerShell Core (Linux/Mac)
+
+**2. Required Secrets**
+- `GITHUB_TOKEN` - Automatically provided by GitHub Actions for GHCR
+- `SONAR_TOKEN` - SonarCloud authentication
+
+**3. Registry Access**
+- Runner must have access to pull from `ghcr.io`
+- Automatic login via GitHub token
+
+### Deployment Safety
+
+The deployment is designed to be **safe and idempotent**:
+
+- ✅ Can be run multiple times without issues
+- ✅ **Never deletes database volumes** (`docker compose down` without `--volumes`)
+- ✅ Preserves all PostgreSQL data between deployments
+- ✅ Graceful container shutdown and restart
+- ✅ Automatic health checks and verification
+
+**Important:** The deployment does NOT use destructive options like:
+- ❌ `--volumes` (would delete database data)
+- ❌ `--rmi` (would delete images)
+- ❌ `-v` (would delete volumes)
+
+
 ## Quick Start
 
 ### Prerequisites
@@ -114,8 +333,8 @@ npm install  # Installs husky hooks automatically
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd gym-management-system
+   git clone https://github.com/Kaz5273/CloudNativeApplicationCurse.git
+   cd CloudNativeApplicationCurse
    ```
 
 2. **Set up environment variables**
