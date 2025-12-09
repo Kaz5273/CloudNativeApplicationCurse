@@ -85,18 +85,21 @@ Start-Sleep -Seconds 10
 
 # Verify deployment
 Write-Host "Verifying deployment..." -ForegroundColor Yellow
-$services = docker compose ps --format json | ConvertFrom-Json
+$servicesOutput = docker compose ps --format "{{.Service}}|{{.State}}"
 
 $allHealthy = $true
-foreach ($service in $services) {
-    $status = $service.State
-    $name = $service.Service
-    
-    if ($status -eq "running") {
-        Write-Host "  ✓ $name : $status" -ForegroundColor Green
-    } else {
-        Write-Host "  ✗ $name : $status" -ForegroundColor Red
-        $allHealthy = $false
+foreach ($line in $servicesOutput) {
+    if ($line) {
+        $parts = $line -split '\|'
+        $name = $parts[0]
+        $status = $parts[1]
+        
+        if ($status -eq "running") {
+            Write-Host "  ✓ $name : $status" -ForegroundColor Green
+        } else {
+            Write-Host "  ✗ $name : $status" -ForegroundColor Red
+            $allHealthy = $false
+        }
     }
 }
 
