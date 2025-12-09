@@ -245,6 +245,7 @@ docker pull ghcr.io/kaz5273/cloudnative-frontend:latest
 **Image repositories:**
 - Backend: [`ghcr.io/kaz5273/cloudnative-backend`](https://github.com/Kaz5273/cloudnative-backend/pkgs/container/cloudnative-backend)
 - Frontend: [`ghcr.io/kaz5273/cloudnative-frontend`](https://github.com/Kaz5273/cloudnative-frontend/pkgs/container/cloudnative-frontend)
+<<<<<<< HEAD
 
 ## 🔄 Automated Deployment
 
@@ -320,6 +321,9 @@ The deployment is designed to be **safe and idempotent**:
 - ❌ `--rmi` (would delete images)
 - ❌ `-v` (would delete volumes)
 
+=======
+- 
+>>>>>>> 73c9de9cb95818ec384a9350e9df2251b5564df0
 ## Quick Start
 
 ### Prerequisites
