@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend-green:
     image: ${BACKEND_IMAGE:-ghcr.io/kaz5273/cloudnative-backend:latest}
@@ -26,5 +24,4 @@ services:
 
 networks:
   gym_network:
-    external: true
     name: gym_network

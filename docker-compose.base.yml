@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Base de donnees partagee entre blue et green
   postgres:
