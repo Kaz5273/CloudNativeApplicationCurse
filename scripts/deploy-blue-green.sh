@@ -76,21 +76,24 @@ echo ""
 echo "[4/5] Attente que $NEW_COLOR soit operationnel..."
 
 BACKEND_CONTAINER="gym_backend_$NEW_COLOR"
-MAX_RETRIES=15
+MAX_RETRIES=12
 RETRY=0
 
-until [ "$(docker inspect -f '{{.State.Status}}' "$BACKEND_CONTAINER" 2>/dev/null)" = "running" ] && \
-      docker exec "$BACKEND_CONTAINER" bash -c 'cat < /dev/null > /dev/tcp/localhost/3000' 2>/dev/null || [ $RETRY -ge $MAX_RETRIES ]; do
-    echo "  En attente... ($RETRY/$MAX_RETRIES)"
+until [ "$(docker inspect -f '{{.State.Status}}' "$BACKEND_CONTAINER" 2>/dev/null)" = "running" ] || [ $RETRY -ge $MAX_RETRIES ]; do
+    echo "  Conteneur en demarrage... ($RETRY/$MAX_RETRIES)"
     sleep 5
     RETRY=$((RETRY + 1))
 done
 
 if [ $RETRY -ge $MAX_RETRIES ]; then
-    echo "  ATTENTION: health check timeout — bascule annulee"
+    echo "  ATTENTION: le conteneur $BACKEND_CONTAINER n'a pas demarre — bascule annulee"
     echo "  La couleur $CURRENT_COLOR reste active"
     exit 1
 fi
+
+# Attente supplementaire pour que Prisma migrate se termine
+echo "  Conteneur running — attente de Prisma migrate (20s)..."
+sleep 20
 
 echo "  $NEW_COLOR est operationnel"
 echo ""
