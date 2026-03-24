@@ -74,13 +74,13 @@ echo ""
 
 # ── Etape 4 : Attendre que la nouvelle couleur soit prete ───────
 echo "[4/5] Attente que $NEW_COLOR soit operationnel..."
-sleep 20
 
 BACKEND_CONTAINER="gym_backend_$NEW_COLOR"
-MAX_RETRIES=10
+MAX_RETRIES=15
 RETRY=0
 
-until docker exec "$BACKEND_CONTAINER" wget -qO- http://localhost:3000/api/health > /dev/null 2>&1 || [ $RETRY -ge $MAX_RETRIES ]; do
+until [ "$(docker inspect -f '{{.State.Status}}' "$BACKEND_CONTAINER" 2>/dev/null)" = "running" ] && \
+      docker exec "$BACKEND_CONTAINER" bash -c 'cat < /dev/null > /dev/tcp/localhost/3000' 2>/dev/null || [ $RETRY -ge $MAX_RETRIES ]; do
     echo "  En attente... ($RETRY/$MAX_RETRIES)"
     sleep 5
     RETRY=$((RETRY + 1))
