@@ -174,16 +174,18 @@ jobs:
           docker rm frontend-test
 
       - name: Tag and Push Backend Image
+        shell: bash
         run: |
-          $owner = "${{ github.repository_owner }}".ToLower()
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           docker tag backend-ci ghcr.io/$owner/cloudnative-backend:${{ github.sha }}
           docker tag backend-ci ghcr.io/$owner/cloudnative-backend:latest
           docker push ghcr.io/$owner/cloudnative-backend:${{ github.sha }}
           docker push ghcr.io/$owner/cloudnative-backend:latest
 
       - name: Tag and Push Frontend Image
+        shell: bash
         run: |
-          $owner = "${{ github.repository_owner }}".ToLower()
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           docker tag frontend-ci ghcr.io/$owner/cloudnative-frontend:${{ github.sha }}
           docker tag frontend-ci ghcr.io/$owner/cloudnative-frontend:latest
           docker push ghcr.io/$owner/cloudnative-frontend:${{ github.sha }}
@@ -191,12 +193,13 @@ jobs:
 
       - name: Clean up local images
         if: always()
+        shell: bash
         run: |
-          $owner = "${{ github.repository_owner }}".ToLower()
-          docker rmi backend-ci -f 2>$null
-          docker rmi frontend-ci -f 2>$null
-          docker rmi ghcr.io/$owner/cloudnative-backend:${{ github.sha }} -f 2>$null
-          docker rmi ghcr.io/$owner/cloudnative-frontend:${{ github.sha }} -f 2>$null
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          docker rmi backend-ci -f 2>/dev/null || true
+          docker rmi frontend-ci -f 2>/dev/null || true
+          docker rmi ghcr.io/$owner/cloudnative-backend:${{ github.sha }} -f 2>/dev/null || true
+          docker rmi ghcr.io/$owner/cloudnative-frontend:${{ github.sha }} -f 2>/dev/null || true
         continue-on-error: true
 
   deploy:
