@@ -45,7 +45,8 @@ Application fullstack de gestion de salle de sport, construite avec des technolo
 - **Docker** pour la conteneurisation
 - **Docker Compose** pour l'orchestration
 - **PostgreSQL** comme base de donnees
-- **Nginx** pour servir le frontend
+- **Nginx** comme reverse proxy et pour servir le frontend
+- **Strategie blue/green** pour les deploiements sans coupure
 
 ## Workflow Git
 
@@ -337,6 +338,118 @@ Le deploiement est concu pour etre **sur et idempotent** :
 - `--volumes` (supprimerait les donnees de la base)
 - `--rmi` (supprimerait les images)
 - `-v` (supprimerait les volumes)
+
+## Deploiement blue/green
+
+### Principe
+
+La strategie blue/green maintient **deux versions de l'application** en parallele. Un reverse proxy Nginx route tout le trafic vers la version active. La bascule est instantanee et le rollback trivial.
+
+```
+[Client]
+   |
+   v
+[Nginx :80]  <-- seul point d'entree public
+   |              |
+   v              v
+[blue]         [green]
+backend :3000  backend :3000
+frontend :80   frontend :80
+   |              |
+   +------+-------+
+          |
+          v
+    [PostgreSQL]   <-- base de donnees partagee
+```
+
+- **blue** = version actuellement en production (active dans Nginx)
+- **green** = nouvelle version a deployer (ou ancienne version pour rollback)
+- **postgres** = unique, partage entre les deux, jamais redemarree lors d'un deploiement
+
+### Role du reverse proxy
+
+Le conteneur Nginx ecoute sur le port **80** (seul port public expose). Il route :
+- `/api/*` → backend de la couleur active
+- `/` → frontend de la couleur active
+
+La couleur active est definie dans `nginx/conf.d/active.conf` :
+
+```nginx
+upstream active_backend  { server backend-blue:3000; }
+upstream active_frontend { server frontend-blue:80; }
+```
+
+Pour basculer, ce fichier est reecrit et Nginx est rechargee a chaud :
+```bash
+docker exec gym_proxy nginx -s reload
+```
+Aucune connexion en cours n'est interrompue.
+
+### Fichiers Docker Compose
+
+| Fichier | Role |
+|---------|------|
+| `docker-compose.base.yml` | Postgres + reverse proxy (infrastructure partagee) |
+| `docker-compose.blue.yml` | backend-blue + frontend-blue |
+| `docker-compose.green.yml` | backend-green + frontend-green |
+
+### Deroulement d'un deploiement
+
+```
+1. Build + push de la nouvelle image (SHA du commit)
+         |
+2. Detection de la couleur active (inspection des conteneurs Docker)
+   ex: blue actif -> cible = green
+         |
+3. Pull de la nouvelle image + demarrage de la couleur inactive (green)
+   docker compose -f base.yml -f green.yml up -d
+         |
+4. Health check sur le backend green (attente)
+         |
+5. Bascule du proxy : réécriture de active.conf + nginx -s reload
+         |
+6. green est en production, blue reste disponible pour rollback
+```
+
+### Conditions d'activation dans la CI
+
+| Branche | Deploiement |
+|---------|-------------|
+| `feature/*` | Aucun deploiement |
+| `develop` | Deploiement classique (`deploy.sh`) |
+| `main` | Deploiement blue/green (`deploy-blue-green.sh`) |
+
+Le job `blue-green-deploy` ne se declenche que sur `main`, apres la publication des images Docker.
+
+### Rollback instantane
+
+Si la nouvelle version est defaillante apres bascule :
+
+```bash
+# Rebascule vers l'ancienne couleur en moins de 5 secondes
+./scripts/rollback-blue-green.sh
+```
+
+L'ancienne couleur reste toujours en cours d'execution jusqu'au prochain deploiement.
+
+### Commandes manuelles
+
+```bash
+# Demarrer l'infrastructure de base
+docker compose -f docker-compose.base.yml up -d
+
+# Demarrer la version blue
+docker compose -f docker-compose.base.yml -f docker-compose.blue.yml up -d
+
+# Demarrer la version green
+docker compose -f docker-compose.base.yml -f docker-compose.green.yml up -d
+
+# Deploiement blue/green manuel
+GITHUB_SHA=latest OWNER=kaz5273 ./scripts/deploy-blue-green.sh
+
+# Rollback manuel
+./scripts/rollback-blue-green.sh
+```
 
 ## Demarrage rapide
 

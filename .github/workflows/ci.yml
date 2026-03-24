@@ -203,10 +203,10 @@ jobs:
         continue-on-error: true
 
   deploy:
-    name: Deploy to Production
+    name: Deploy to Production (develop)
     runs-on: self-hosted
     needs: docker
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop'
 
     steps:
       - name: Checkout code
@@ -227,6 +227,37 @@ jobs:
         run: |
           chmod +x ./scripts/deploy.sh
           ./scripts/deploy.sh
+
+      - name: Display running containers
+        if: always()
+        shell: bash
+        run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+  blue-green-deploy:
+    name: Blue/Green Deploy (main)
+    runs-on: self-hosted
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run blue/green deployment script
+        shell: bash
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          chmod +x ./scripts/deploy-blue-green.sh
+          ./scripts/deploy-blue-green.sh
 
       - name: Display running containers
         if: always()

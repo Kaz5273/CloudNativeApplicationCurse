@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend-green:
+    image: ${BACKEND_IMAGE:-ghcr.io/kaz5273/cloudnative-backend:latest}
+    container_name: gym_backend_green
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-gym_management}
+      PORT: 3000
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym_network
+    command: sh -c "npx prisma migrate deploy && npm start"
+
+  frontend-green:
+    image: ${FRONTEND_IMAGE:-ghcr.io/kaz5273/cloudnative-frontend:latest}
+    container_name: gym_frontend_green
+    restart: unless-stopped
+    networks:
+      - gym_network
+
+networks:
+  gym_network:
+    external: true
+    name: gym_network
