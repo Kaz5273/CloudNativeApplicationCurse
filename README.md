@@ -451,6 +451,44 @@ GITHUB_SHA=latest OWNER=kaz5273 ./scripts/deploy-blue-green.sh
 ./scripts/rollback-blue-green.sh
 ```
 
+## Monitoring & Observabilite (TP6)
+
+La stack de monitoring collecte les metriques et les logs de l'application en temps reel.
+
+### Demarrer la stack monitoring
+
+> La stack applicative (blue/green) doit etre demarree avant le monitoring.
+
+```bash
+# 1. Configurer le mot de passe Grafana
+cp .env.monitoring.example .env
+# Editer .env : definir GRAFANA_ADMIN_PASSWORD
+
+# 2. Lancer le monitoring
+docker compose -f docker-compose.monitoring.yml --env-file .env up -d
+
+# 3. Verifier l'etat
+docker compose -f docker-compose.monitoring.yml ps
+```
+
+### Interfaces
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Grafana | http://localhost:3000 | Dashboards (user: admin) |
+| Prometheus | http://localhost:9090 | Metriques + PromQL |
+| cAdvisor | http://localhost:8080 | Ressources des conteneurs |
+
+### Arreter le monitoring
+
+```bash
+docker compose -f docker-compose.monitoring.yml down
+```
+
+Pour l'architecture complete, les requetes PromQL/LogQL et la creation des dashboards, voir [MONITORING.md](MONITORING.md).
+
+---
+
 ## Demarrage rapide
 
 ### Prerequis

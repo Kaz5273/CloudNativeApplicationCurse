@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: 'local'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # NestJS/Express backend - blue instance
+  - job_name: 'backend-blue'
+    static_configs:
+      - targets: ['gym_backend_blue:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # NestJS/Express backend - green instance
+  - job_name: 'backend-green'
+    static_configs:
+      - targets: ['gym_backend_green:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # cAdvisor - Docker container resource metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
