@@ -1,0 +1,45 @@
+services:
+  # Base de donnees partagee entre blue et green
+  postgres:
+    image: postgres:15-alpine
+    container_name: gym_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gym_management}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gym_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-gym_management}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Reverse proxy — seul point d'entree public
+  # Route vers blue ou green selon nginx/conf.d/active.conf
+  reverse-proxy:
+    image: nginx:alpine
+    container_name: gym_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - gym_network
+
+networks:
+  gym_network:
+    driver: bridge
+    name: gym_network
+
+volumes:
+  postgres_data:
+    name: gym_postgres_data
