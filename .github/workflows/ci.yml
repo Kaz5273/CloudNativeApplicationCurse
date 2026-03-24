@@ -204,7 +204,7 @@ jobs:
     runs-on: self-hosted
     needs: docker
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -217,10 +217,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run deployment script
+        shell: bash
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          OWNER: ${{ github.repository_owner }}
         run: |
-          $owner = "${{ github.repository_owner }}".ToLower()
-          ./scripts/deploy.ps1 -ImageTag "${{ github.sha }}" -Owner $owner
+          chmod +x ./scripts/deploy.sh
+          ./scripts/deploy.sh
 
       - name: Display running containers
         if: always()
+        shell: bash
         run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
